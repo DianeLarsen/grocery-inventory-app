@@ -14,10 +14,27 @@ datasource db {
 }
 
 model InventoryItem {
-  id        Int      @id @default(autoincrement())
-  name      String
-  quantity  Int
-  imageUrl  String?
-  notes     String?
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  name       String
+  category   String?
+  quantity   Int      @default(1)
+  unit       String?
+  location   String?
+  notes      String?
+  imageUrl   String?
+  addedAt    DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  barcode     String?  // UPC or EAN
+  brand       String?
+  ingredients Json? 
+  nutrition   Json?    // store raw API block
+product_quantity   String?      
+  userId     String
+  user       User     @relation(fields: [userId], references: [id]) // 👈 fix
+}
+
+
+model User {
+  id             String          @id @default(cuid())
+  inventoryItems InventoryItem[]
 }
