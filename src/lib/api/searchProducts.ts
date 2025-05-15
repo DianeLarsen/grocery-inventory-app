@@ -6,15 +6,24 @@ interface SearchOptions {
   brand?: string;
   barcode?: string;
   limit?: number; // This now controls display limit only, not data retrieval
+  searchType?: "branded" | "raw" | undefined;
+  
 }
 
-export async function searchProduct({ query, brand, barcode }: SearchOptions) {
+
+export async function searchProduct({ query, brand = undefined, barcode = undefined, searchType = "branded" }: SearchOptions) {
   const sources = [searchFoodDataCentral, searchOpenFoodFacts];
   let allResults: any[] = [];
-
+  console.log("in searchProducts", barcode);
   for (const source of sources) {
     try {
-      const results = await source({ query, brand: undefined, barcode: undefined, limit: 100 });
+      const results = await source({
+        query,
+        brand,
+        barcode,
+        limit: 100,
+        searchType,
+      });
 
       if (Array.isArray(results) && results.length > 0) {
         allResults = [...allResults, ...results];
@@ -27,6 +36,7 @@ export async function searchProduct({ query, brand, barcode }: SearchOptions) {
 
   // ✅ Barcode and brand filtering can happen here — but DO NOT slice
   if (barcode) {
+    console.log("There is a barcode", barcode);
     allResults = allResults.filter((item) => item.upc === barcode);
   }
 

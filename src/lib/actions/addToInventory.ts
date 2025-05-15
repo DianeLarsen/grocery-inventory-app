@@ -3,17 +3,9 @@
 import prisma from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { auth } from '@clerk/nextjs/server';
+import type { ManualInventoryInput } from '@/types';
 
-export async function addToInventory(item: {
-  upc: string;
-  name: string;
-  category?: string;
-  brandOwner?: string;
-  brand?: string;
-  quantity?: string;
-  imageUrl?: string;
-  url?: string;
-}) {
+export async function addToInventory(item: ManualInventoryInput) {
   const { userId } = await auth();
   if (!userId) throw new Error('Not authenticated');
 
@@ -24,11 +16,15 @@ export async function addToInventory(item: {
       name: item.name,
       category: item.category || null,
       brand: item.brand || null,
-      product_quantity: item.quantity || null,
+      productSize: item.productSize || null,
+      quantityAvailable: item.quantityAvailable || null,
+      unit: item.unit || null,
+      location: item.location || null,
+      notes: item.notes || null,
+      lowThreshold: item.lowThreshold || null,
       imageUrl: item.imageUrl || null,
-      nutrition: Prisma.JsonNull, // optional, unless you’re storing raw JSON from API
-      ingredients: Prisma.JsonNull, // same
-
+      nutrition: Prisma.JsonNull,
+      ingredients: Prisma.JsonNull,
     },
   });
 }

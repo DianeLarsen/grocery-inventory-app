@@ -3,6 +3,7 @@ interface SearchOptions {
   brand?: string;
   barcode?: string;
   limit?: number;
+  searchType?: string;
 }
 
 export async function searchOpenFoodFacts({
@@ -10,16 +11,23 @@ export async function searchOpenFoodFacts({
   brand,
   barcode,
   limit = 10,
+  searchType = undefined,
 }: SearchOptions) {
   try {
-    const isBarcode = barcode || /^\d+$/.test(query);
+    const isBarcode = Boolean(barcode || (/^\d{8,14}$/.test(query))); // 8–14 digit codes
     const searchValue = barcode || query;
+    const isRaw = searchType === "raw";
+  
+    
+    // Adjust your search URL accordingly
 
     const url = isBarcode
       ? `https://world.openfoodfacts.org/api/v0/product/${searchValue}.json`
       : `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(
           searchValue
-        )}&search_simple=1&action=process&json=1&page_size=100`; // Get more to filter from
+        )}&search_simple=1&action=process&json=1&page_size=100${
+          isRaw ? "&tagtype_0=ingredients" : "&tagtype_0=brands"
+        }`;
 
     const res = await fetch(url, {
       headers: {
@@ -34,33 +42,47 @@ export async function searchOpenFoodFacts({
 
     const data = await res.json();
 
-    const products = isBarcode
-      ? [data.product]
-      : data.products || [];
+    // ✅ Barcode lookup returns a single product object
+    if (isBarcode && data?.product?.product_name) {
+      return [
+        {
+          upc: data.product.code,
+          name: data.product.product_name,
+          category: data.product.categories,
+          brandOwner: null,
+          brand: data.product.brands,
+          productSize: data.quantity || data.serving_size,
+          imageUrl: data.product.image_url,
+          url: `https://world.openfoodfacts.org/product/${data.product.code}`,
+        },
+      ];
+    }
 
-    if (!products || products.length === 0) return [];
+    // ✅ Fallback: search results
+    const products = data.products || [];
+    if (!products.length) return [];
 
-    // Filter by name and optional brand
     const filtered = products
       .filter((p: any) => p?.product_name)
       .filter((p: any) => {
         if (!brand) return true;
         return p.brands?.toLowerCase().includes(brand.toLowerCase());
       });
-      return filtered.map((product: any) => ({
-        upc: product.code,
-        name: product.product_name,
-        category: product.categories,
-        brandOwner: null,
-        brand: product.brands,
-        quantity: product.quantity || product.serving_size,
-        imageUrl: product.image_url,
-        url: `https://world.openfoodfacts.org/product/${product.code}`, // ✅ add link
-      }));
-      
+
+    return filtered.map((product: any) => ({
+      upc: product.code,
+      name: product.product_name,
+      category: product.categories,
+      brandOwner: null,
+      brand: product.brands,
+      productSize: product.quantity || product.serving_size,
+      imageUrl: product.image_url,
+      url: `https://world.openfoodfacts.org/product/${product.code}`,
+    }));
   } catch (err) {
     console.error("OpenFoodFacts lookup failed:", err);
     return [];
   }
 }
+
 

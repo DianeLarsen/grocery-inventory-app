@@ -13,25 +13,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
+
 model InventoryItem {
-  id         String   @id @default(cuid())
-  name       String
-  category   String?
-  quantity   Int      @default(1)
-  unit       String?
-  location   String?
-  notes      String?
-  imageUrl   String?
-  addedAt    DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  barcode     String?  // UPC or EAN
-  brand       String?
-  ingredients Json? 
-  nutrition   Json?    // store raw API block
-product_quantity   String?      
-  userId     String
-  user       User     @relation(fields: [userId], references: [id]) // 👈 fix
+  id                String   @id @default(cuid())
+  name              String
+  brand             String?
+  category          String?
+  quantityAvailable String?   // ✅ Make sure this exists
+  productSize       String?   // ✅ Make sure this exists
+  unit              String?
+  location          String?
+  notes             String?
+  lowThreshold      String?
+  imageUrl          String?
+  barcode           String?
+  ingredients       Json?
+  nutrition         Json?
+  addedAt           DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  userId            String
+  user              User     @relation(fields: [userId], references: [id])
 }
+
+
 
 
 model User {

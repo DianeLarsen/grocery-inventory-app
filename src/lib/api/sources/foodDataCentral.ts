@@ -1,51 +1,51 @@
 interface SearchOptions {
-    query: string;
-    brand?: string;
-    barcode?: string;
-    limit?: number;
+  query: string;
+  brand?: string;
+  barcode?: string;
+  limit?: number;
+  searchType?: "branded" | "raw";
+  signal?: AbortSignal;
+}
+
+
+
+export async function searchFoodDataCentral({
+  query,
+  brand,
+  barcode,
+  limit = 10,
+  searchType,
+  signal, // ✅ Accept it
+}: SearchOptions) {
+  const key = process.env.NEXT_PUBLIC_USDA_API_KEY;
+  if (!key) throw new Error("Missing USDA_API_KEY");
+
+  const searchTerm = barcode ? barcode : brand && query ? `${query} ${brand}` : query;
+
+  const url = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(
+    searchTerm || ""
+  )}&dataType=${searchType === "raw" ? "Foundation,SR Legacy" : "Branded"}&pageSize=100&api_key=${key}`;
+
+  const res = await fetch(url, { signal }); // ✅ Use the signal here
+
+  if (!res.ok) {
+    throw new Error(`USDA fetch failed: ${res.status}`);
   }
-  
-  export async function searchFoodDataCentral({
-    query,
-    brand,
-    barcode,
-  }: SearchOptions) {
-    const key = process.env.NEXT_PUBLIC_USDA_API_KEY;
-    if (!key) throw new Error("Missing USDA_API_KEY");
-  
-    let finalQuery = "";
-  
-    if (barcode) {
-      finalQuery = barcode; // Don't mix with query or brand
-    } else if (brand && query) {
-      finalQuery = `${query} ${brand}`;
-    } else {
-      finalQuery = query;
-    }
-  
-    const url = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(
-      finalQuery
-    )}&dataType=Branded&pageSize=100&api_key=${key}`;
-  
-    console.log("🔍 USDA search:", url);
-  
-    const res = await fetch(url);
-    const data = await res.json();
-  
-    if (!data.foods) {
-      console.warn("⚠️ USDA returned no 'foods' for:", finalQuery);
+
+  const data = await res.json();
+    if (!data.foods || !Array.isArray(data.foods)) {
+      console.warn("⚠️ Unexpected USDA response format:", data);
       return [];
     }
   
+    // ✅ Barcode match filtering (strict)
     let items = data.foods;
-  
-    // Exact barcode match
     if (barcode) {
       items = items.filter((item: any) => item.gtinUpc === barcode);
     }
   
-    // Brand filter
-    if (brand && !barcode) {
+    // ✅ Optional brand filtering (when not barcode search)
+    if (!barcode && brand) {
       items = items.filter((item: any) =>
         item.brandName?.toLowerCase().includes(brand.toLowerCase())
       );
@@ -56,15 +56,16 @@ interface SearchOptions {
       return [];
     }
   
-    return items.map((item: any) => ({
+    return items.slice(0, limit).map((item: any) => ({
       upc: item.gtinUpc,
       name: item.description,
       category: item.foodCategory,
       brandOwner: item.brandOwner,
       brand: item.brandName,
-      quantity: item.packageWeight || "",
+      productSize: item.quantity || item.serving_size,
       imageUrl: null,
       url: `https://fdc.nal.usda.gov/fdc-app.html#/food-details/${item.fdcId}/branded`,
     }));
   }
+  
   

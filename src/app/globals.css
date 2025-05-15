@@ -32,7 +32,8 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-
+    --modal: 0 0% 96%; /* slightly darker than white */
+    --modal-foreground: 240 10% 3.9%;
     --sh-identifier: #354150;
     --sh-keyword: #f47067;
     --sh-string: #00a99a;
@@ -69,6 +70,8 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    --modal: 240 5% 10%;
+    --modal-foreground: 0 0% 98%;
 
     --sh-class: #4c97f8;
     --sh-identifier: white;
@@ -135,12 +138,23 @@
     animation: blink-effect 1s ease-in-out 5;
   }
 }
+@layer components {
+  .themed-select {
+    @apply bg-[hsl(var(--background))] text-[hsl(var(--foreground))] border border-[hsl(var(--border))] rounded px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))];
+  }
+}
 
 /* =====================
    Animations
    ===================== */
 @keyframes blink-effect {
-  0% { background-color: rgba(255, 255, 0, 0.8); }
-  50% { background-color: rgba(255, 255, 0, 0.4); }
-  100% { background-color: transparent; }
+  0% {
+    background-color: rgba(255, 255, 0, 0.8);
+  }
+  50% {
+    background-color: rgba(255, 255, 0, 0.4);
+  }
+  100% {
+    background-color: transparent;
+  }
 }

@@ -28,17 +28,17 @@ export default function RootLayout({
         <body suppressHydrationWarning>
           <Providers>
             <div
-              className={cn(
+              className={`bg-[url('https://www.transparenttextures.com/patterns/asfalt-light.png')] ${cn(
                 "flex min-h-screen flex-col font-sans antialiased",
                 inter.variable,
                 playfair.variable
-              )}
+              )}`}
             >
               <div className="w-full px-4 md:px-4 lg:px-8 xl:px-16 2xl:px-32">
                 <Navbar />
               </div>
 
-              <main className="grow">{children}</main>
+              <main className="grow ">{children}</main>
               <Footer />
             </div>
           </Providers>

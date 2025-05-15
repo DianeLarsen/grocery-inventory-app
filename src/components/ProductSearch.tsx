@@ -1,21 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { searchProductAction } from "@/lib/actions/searchProductAction";
-import Fuse from "fuse.js";
 import Link from "next/link";
-import Select from "react-select";
+// import Select from "react-select";
+import { addToInventory } from "@/lib/actions/addToInventory";
 
-type ProductResult = {
-  upc: string;
-  name: string;
-  category?: string;
-  brandOwner?: string;
-  brand?: string;
-  quantity?: string;
-  imageUrl?: string;
-  url?: string;
-};
+import type { ProductResult } from "@/types";
+import TypedSelect, { SelectOption } from "@/components/TypedSelect";
 
 export default function ProductSearch() {
   const [query, setQuery] = useState("");
@@ -23,135 +15,90 @@ export default function ProductSearch() {
   const [availableBrands, setAvailableBrands] = useState<
     { value: string; label: string }[]
   >([]);
-
+  const activeRequestId = useRef<number>(0);
   const [selectedBrand, setSelectedBrand] = useState<string>("");
-
-  const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searchType, setSearchType] = useState<"branded" | "raw">("branded");
   const [loading, setLoading] = useState(false);
-
-  const [brand, setBrand] = useState("");
   const [barcode, setBarcode] = useState("");
   const [limit, setLimit] = useState(10);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const requestId = Date.now();
+    activeRequestId.current = requestId; // ✅ update the ref
     setLoading(true);
+  
     const formData = new FormData();
     formData.append("query", query);
-    formData.append("brand", brand);
     formData.append("barcode", barcode);
     formData.append("limit", limit.toString());
-
+    formData.append("searchType", searchType);
+  
     const data = await searchProductAction(formData);
-
-    // ✅ Set results BEFORE filtering/slicing
-    setResults(data);
-
-    // ✅ Use full result set for brand suggestions
-    const uniqueBrands = Array.from(
-      new Set(data.map((item) => item.brand?.trim()).filter(Boolean))
-    );
-    setAvailableBrands(uniqueBrands);
-    const formattedBrands = uniqueBrands.map((b) => ({
-      value: b,
-      label: b,
-    }));
-    setAvailableBrands(formattedBrands);
-
-    setSelectedBrand("");
-
-    setResults(data);
+  
+    if (requestId === activeRequestId.current) {
+      setResults(data);
+  
+      const uniqueBrands = Array.from(
+        new Set(data.map((item) => item.brand?.trim()).filter(Boolean))
+      );
+      const formattedBrands = uniqueBrands.map((b) => ({
+        value: b,
+        label: b,
+      }));
+      setAvailableBrands(formattedBrands);
+      setSelectedBrand("");
+    } else {
+      console.log("⚠️ Ignoring stale search result");
+    }
+  
     setLoading(false);
   };
+  
   const handleAddToInventory = async (item: ProductResult) => {
     try {
-      const res = await fetch("/api/inventory/add", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(item),
-      });
-  
-      if (!res.ok) throw new Error("Failed to add item");
-  
-      // Optional: Toast or UI feedback
-      console.log("✅ Item added:", item.name);
+      await addToInventory(item);
+      console.log("✅ Item added to inventory:", item.name);
+      // Optional: Show toast or update UI
     } catch (err) {
-      console.error("❌ Add to inventory failed:", err);
+      console.error("❌ Failed to add to inventory:", err);
     }
+  };
+  const cancelSearch = () => {
+    activeRequestId.current = -1;
+    setResults(null);
+    setLoading(false);
   };
   
   return (
     <div className="p-6">
       <form onSubmit={handleSubmit} className="space-y-4 mb-4">
-      <div className="flex flex-col gap-4 md:flex-row">
-  <input
-    type="text"
-    name="query"
-    value={query}
-    onChange={(e) => setQuery(e.target.value)}
-    placeholder="Search by name or description"
-    className="border p-2 rounded w-full"
-  />
-
-  <div className="relative w-full md:w-1/3">
-    <Select
-      options={availableBrands}
-      value={availableBrands.find((b) => b.value === selectedBrand) || null}
-      onChange={(selectedOption) => {
-        setSelectedBrand(selectedOption?.value || "");
-      }}
-      isClearable
-      placeholder="Select a brand..."
-      styles={{
-        control: (base) => ({
-          ...base,
-          backgroundColor: "hsl(var(--background))",
-          color: "hsl(var(--foreground))",
-          borderColor: "hsl(var(--border))",
-          boxShadow: "none",
-        }),
-        menu: (base) => ({
-          ...base,
-          backgroundColor: "hsl(var(--background))",
-          color: "hsl(var(--foreground))",
-          boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.3)",
-          border: "1px solid hsl(var(--border))",
-        }),
-        option: (base, { isFocused, isSelected }) => ({
-          ...base,
-          backgroundColor: isSelected
-            ? "hsl(var(--primary))"
-            : isFocused
-            ? "hsl(var(--muted))"
-            : "hsl(var(--background))",
-          color: isSelected
-            ? "hsl(var(--primary-foreground))"
-            : "hsl(var(--foreground))",
-          cursor: "pointer",
-        }),
-        singleValue: (base) => ({
-          ...base,
-          color: "hsl(var(--foreground))",
-        }),
-        input: (base) => ({
-          ...base,
-          color: "hsl(var(--foreground))",
-        }),
-      }}
-      classNamePrefix="react-select"
-    />
-  </div>
-
-  <input
-    type="text"
-    name="barcode"
-    value={barcode}
-    onChange={(e) => setBarcode(e.target.value)}
-    placeholder="Barcode (optional)"
-    className="border p-2 rounded w-full md:w-1/3"
-  />
-</div>
+        <div className="flex flex-col gap-4 md:flex-row">
+          <input
+            type="text"
+            name="query"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by name or description"
+            className="border p-2 rounded w-full"
+          />
+          <select
+            value={searchType}
+            onChange={(e) => setSearchType(e.target.value as "raw" | "branded")}
+            className="border p-2 rounded"
+          >
+            <option value="branded">Branded</option>
+            <option value="raw">Raw Ingredient</option>
+          </select>
+          <input
+            type="text"
+            name="barcode"
+            value={barcode}
+            onChange={(e) => setBarcode(e.target.value)}
+            placeholder="Barcode (optional)"
+            className="border p-2 rounded w-full md:w-1/3"
+          />
+        </div>
 
         <div className="flex gap-2 items-center">
           <label htmlFor="limit" className="text-sm">
@@ -168,6 +115,67 @@ export default function ProductSearch() {
             <option value={25}>25</option>
             <option value={100}>100</option>
           </select>
+          {results && availableBrands.length > 0 && (
+           <div className="relative w-full md:w-1/3" suppressHydrationWarning>
+           <TypedSelect
+             instanceId="brand-select"
+             options={availableBrands}
+             value={
+               availableBrands.find((b) => b.value === selectedBrand) || null
+             }
+             onChange={(selectedOption: SelectOption | null) => {
+               setSelectedBrand(selectedOption?.value || "");
+             }}
+             isClearable
+             placeholder="Select a brand..."
+             styles={{
+               control: (base) => ({
+                 ...base,
+                 backgroundColor: "hsl(var(--background))",
+                 color: "hsl(var(--foreground))",
+                 borderColor: "hsl(var(--border))",
+                 boxShadow: "none",
+               }),
+               menu: (base) => ({
+                 ...base,
+                 backgroundColor: "hsl(var(--background))",
+                 color: "hsl(var(--foreground))",
+                 boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.3)",
+                 border: "1px solid hsl(var(--border))",
+               }),
+               option: (base, { isFocused, isSelected }) => ({
+                 ...base,
+                 backgroundColor: isSelected
+                   ? "hsl(var(--primary))"
+                   : isFocused
+                   ? "hsl(var(--muted))"
+                   : "hsl(var(--background))",
+                 color: isSelected
+                   ? "hsl(var(--primary-foreground))"
+                   : "hsl(var(--foreground))",
+                 cursor: "pointer",
+               }),
+               singleValue: (base) => ({
+                 ...base,
+                 color: "hsl(var(--foreground))",
+               }),
+               input: (base) => ({
+                 ...base,
+                 color: "hsl(var(--foreground))",
+               }),
+             }}
+             classNamePrefix="react-select"
+           />
+           {selectedBrand && (
+  <button
+    onClick={() => setSelectedBrand("")}
+    className="ml-2 text-sm text-muted-foreground hover:text-foreground"
+  >
+    Clear brand filter
+  </button>
+)}
+         </div>
+)}
           <button
             type="submit"
             disabled={loading}
@@ -196,11 +204,22 @@ export default function ProductSearch() {
                   ></path>
                 </svg>
                 Searching...
+                
               </>
             ) : (
               "Search"
             )}
           </button>
+          {loading && (
+  <button
+    type="button"
+    onClick={cancelSearch}
+    className="bg-muted text-foreground px-4 py-2 rounded border border-border hover:bg-muted/70 transition"
+  >
+    Cancel Search
+  </button>
+)}
+
         </div>
       </form>
 
@@ -244,8 +263,8 @@ export default function ProductSearch() {
                     : true
                 )
                 .slice(0, limit)
-                .map((item) => (
-                  <tr key={item.upc}>
+                .map((item, index) => (
+                  <tr key={item.upc || `${item.name}-${index}`}>
                     <td className="p-2 border">{item.upc}</td>
                     <td className="p-2 border">
                       {item.url ? (
@@ -264,15 +283,15 @@ export default function ProductSearch() {
                     <td className="p-2 border">{item.category}</td>
                     <td className="p-2 border">{item.brandOwner}</td>
                     <td className="p-2 border">{item.brand}</td>
-                    <td className="p-2 border">{item.quantity || "—"}</td>
+                    <td className="p-2 border">{item.productSize || "—"}</td>
                     <td className="p-2 border">
-    <button
-      onClick={() => handleAddToInventory(item)}
-      className="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-    >
-      + Add
-    </button>
-  </td>
+                      <button
+                        onClick={() => handleAddToInventory(item)}
+                        className="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                      >
+                        + Add
+                      </button>
+                    </td>
                   </tr>
                 ))}
           </tbody>
