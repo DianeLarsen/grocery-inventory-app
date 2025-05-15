@@ -1,5 +1,6 @@
 import { searchFoodDataCentral } from "./sources/foodDataCentral";
 import { searchOpenFoodFacts } from "./sources/openFoodFacts";
+import { searchFatSecret } from "./sources/fatSecret";
 
 interface SearchOptions {
   query: string;
@@ -12,9 +13,10 @@ interface SearchOptions {
 
 
 export async function searchProduct({ query, brand = undefined, barcode = undefined, searchType = "branded" }: SearchOptions) {
-  const sources = [searchFoodDataCentral, searchOpenFoodFacts];
+  const sources = [searchFatSecret, searchFoodDataCentral, searchOpenFoodFacts];
+
   let allResults: any[] = [];
-  console.log("in searchProducts", barcode);
+
   for (const source of sources) {
     try {
       const results = await source({
