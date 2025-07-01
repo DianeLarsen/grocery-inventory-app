@@ -17,7 +17,20 @@ export default function InventoryList({
     location: "",
     lowStockOnly: false,
   });
-
+  const handleAdjustQuantity = (item: InventoryItem, delta: number) => {
+    const current = parseFloat(item.quantityAvailable || "0");
+    const updatedQty = Math.max(current + delta, 0).toFixed(2); // avoid negatives
+  
+    const updatedItem: InventoryItem = {
+      ...item,
+      quantityAvailable: updatedQty,
+    };
+  
+    setItems((prev) =>
+      prev.map((i) => (i.id === item.id ? updatedItem : i))
+    );
+  };
+  
   const handleSave = (updated: InventoryItem) => {
     setItems(items.map((item) => (item.id === updated.id ? updated : item)));
     setEditingItem(null);
@@ -87,40 +100,73 @@ export default function InventoryList({
       </div>
 
       {filteredItems.length === 0 ? (
-        <p className="text-muted-foreground">No items match your filters.</p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredItems.map((item) => (
-            <div
-              key={item.id}
-              className="bg-card p-4 rounded-xl shadow flex gap-4"
-            >
-              {item.imageUrl && (
-                <Image
-                  src={item.imageUrl}
-                  alt={item.name}
-                  className="w-16 h-16 object-cover rounded"
-                  width={16}
-                  height={16}
-                />
-              )}
-              <div className="flex-1">
-                <h3 className="font-semibold">{item.name}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {item.quantityAvailable || "-"} {item.unit || ""} •{" "}
-                  {item.brand || "No brand"}
-                </p>
-              </div>
-              <button
-                onClick={() => setEditingItem(item)}
-                className="text-sm text-blue-600 hover:underline"
-              >
-                Edit
-              </button>
-            </div>
-          ))}
+  <p className="text-muted-foreground">No items match your filters.</p>
+) : (
+  <div className="w-full border-2 border-border rounded-lg overflow-hidden">
+    <div className="grid grid-cols-6 bg-muted text-sm font-semibold p-2 border-b-2 border-border">
+      <div className="col-span-2">Item</div>
+      <div>Quantity</div>
+      <div>Unit</div>
+      <div>Brand</div>
+      <div>Edit</div>
+    </div>
+    {filteredItems.map((item, idx) => (
+      <div
+        key={item.id}
+        className={`grid grid-cols-6 items-center p-2 border-b border-border ${
+          idx % 2 === 0 ? "bg-background" : "bg-muted/50"
+        }`}
+      >
+        <div className="col-span-2 flex items-center gap-2">
+          {item.imageUrl && (
+            <Image
+              src={item.imageUrl}
+              alt={item.name}
+              className="w-10 h-10 object-cover rounded"
+              width={40}
+              height={40}
+            />
+          )}
+          <span className="font-medium">{item.name}</span>
         </div>
-      )}
+        <div className="flex items-center gap-2">
+  <button
+    onClick={() =>
+      handleAdjustQuantity(
+        item,
+        item.unit?.toLowerCase().includes("box") ? -0.25 : -1
+      )
+    }
+    className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
+  >
+    −
+  </button>
+  <span className="min-w-[3ch] text-center">
+    {item.quantityAvailable || "-"}
+  </span>
+  <button
+    onClick={() => handleAdjustQuantity(item, 1)}
+    className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded"
+  >
+    +
+  </button>
+</div>
+
+        <div>{item.unit || "-"}</div>
+        <div>{item.brand || "-"}</div>
+        <div>
+          <button
+            onClick={() => setEditingItem(item)}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            Edit
+          </button>
+        </div>
+      </div>
+    ))}
+  </div>
+)}
+
 
       {editingItem && (
         <EditInventoryModal

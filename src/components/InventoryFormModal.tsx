@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import TypedSelect, { SelectOption } from '@/components/TypedSelect';
+import TypedSelect, { SelectOption } from "@/components/TypedSelect";
 import type { InventoryItem } from "@/types";
 
 export type InventoryFormProps = {
@@ -14,20 +14,72 @@ export type InventoryFormProps = {
 };
 
 const predefinedUnits = [
-  "jar", "can", "bottle", "dozen", "box", "pack", "lb", "oz", "g", "kg", "cup", "tsp", "tbsp"
+  "jar",
+  "can",
+  "bottle",
+  "dozen",
+  "box",
+  "pack",
+  "lb",
+  "oz",
+  "g",
+  "kg",
+  "cup",
+  "tsp",
+  "tbsp",
 ];
 
 const commonCategories = [
-  "vegetable", "fruit", "soup", "cereal", "pasta", "rice", "meat", "dairy", "frozen", "spices",
-  "baking", "condiments", "sauces", "beverages", "snacks", "bread", "canned goods", "cleaning",
+  "vegetable",
+  "fruit",
+  "soup",
+  "cereal",
+  "pasta",
+  "rice",
+  "meat",
+  "dairy",
+  "frozen",
+  "spices",
+  "baking",
+  "condiments",
+  "sauces",
+  "beverages",
+  "snacks",
+  "bread",
+  "canned goods",
+  "cleaning",
 ];
 
 const predefinedLocations = [
-  "snack cabinet", "left of oven cabinet", "long counter cabinet 1", "long counter cabinet 2",
-  "long counter cabinet 3", "baking cabinet", "noodle cabinet", "spice cabinet", "can cabinet",
-  "pantry", "drawer 1", "drawer 2", "drawer 3", "drawer 4", "drawer 5", "drawer 6",
-  "kitchen fridge", "kitchen freezer", "garage fridge freezer", "garage fridge", "garage large freezer"
+  "snack cabinet",
+  "left of oven cabinet",
+  "long counter cabinet 1",
+  "long counter cabinet 2",
+  "long counter cabinet 3",
+  "baking cabinet",
+  "noodle cabinet",
+  "spice cabinet",
+  "can cabinet",
+  "pantry",
+  "drawer 1",
+  "drawer 2",
+  "drawer 3",
+  "drawer 4",
+  "drawer 5",
+  "drawer 6",
+  "kitchen fridge",
+  "kitchen freezer",
+  "garage fridge freezer",
+  "garage fridge",
+  "garage large freezer",
 ];
+const recommendedDecrement = (unit: string): string => {
+  const lower = unit.toLowerCase();
+  if (["can", "loaf", "each", "slice", "head"].includes(lower)) return "1";
+  if (["bag", "box", "carton"].includes(lower)) return "0.25";
+  if (["jar", "bottle", "tub", "container"].includes(lower)) return "0.1";
+  return "1";
+};
 
 const customSelectStyles = {
   control: (base: any) => ({
@@ -72,7 +124,7 @@ export default function InventoryFormModal({
   onSave,
   title = "Add or Edit Item",
   isSaving = false,
-  isModal = true
+  isModal = true,
 }: InventoryFormProps) {
   const [form, setForm] = useState<Partial<InventoryItem>>(initialItem);
 
@@ -80,7 +132,9 @@ export default function InventoryFormModal({
     setForm(initialItem);
   }, [initialItem]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
@@ -91,17 +145,27 @@ export default function InventoryFormModal({
   };
 
   const unitOptions = predefinedUnits.map((u) => ({ value: u, label: u }));
-  const locationOptions = predefinedLocations.map((l) => ({ value: l, label: l }));
+  const locationOptions = predefinedLocations.map((l) => ({
+    value: l,
+    label: l,
+  }));
   const categoryOptions = commonCategories.map((c) => ({ value: c, label: c }));
 
   const Wrapper = isModal ? "div" : "section";
   const wrapperProps = isModal
-    ? { className: "fixed inset-0 bg-background/70 backdrop-blur-md flex justify-center items-center z-50" }
+    ? {
+        className:
+          "fixed inset-0 bg-background/70 backdrop-blur-md flex justify-center items-center z-50",
+      }
     : {};
 
   return (
     <Wrapper {...wrapperProps}>
-      <div className={`bg-[hsl(var(--modal)/0.9)] p-6 rounded-2xl shadow-lg w-full max-w-xl ${isModal ? "border border-border" : ""}`}>
+      <div
+        className={`bg-[hsl(var(--modal)/0.9)] p-6 rounded-2xl shadow-lg w-full max-w-xl ${
+          isModal ? "border border-border" : ""
+        }`}
+      >
         <h3 className="text-xl font-semibold mb-4">{title}</h3>
         <form onSubmit={handleSubmit} className="grid gap-4">
           {["name", "brand", "notes"].map((field) => (
@@ -119,7 +183,10 @@ export default function InventoryFormModal({
             placeholder="Category"
             options={categoryOptions}
             onChange={(selectedOption: SelectOption | null) =>
-              setForm((prev) => ({ ...prev, category: selectedOption?.value || "" }))
+              setForm((prev) => ({
+                ...prev,
+                category: selectedOption?.value || "",
+              }))
             }
             value={
               form.category
@@ -149,10 +216,43 @@ export default function InventoryFormModal({
           <TypedSelect
             placeholder="Unit"
             options={unitOptions}
+            onChange={(selectedOption: SelectOption | null) => {
+              const value = selectedOption?.value || "";
+              setForm((prev) => ({
+                ...prev,
+                unit: value,
+                decrementStep: recommendedDecrement(value),
+              }));
+            }}
+            styles={customSelectStyles}
+            isClearable
+          />
+          <TypedSelect
+            placeholder="Decrement Step"
+            options={[
+              { value: "1", label: "Whole (e.g. can, loaf)" },
+              { value: "0.25", label: "Quarter (e.g. bag of chips)" },
+              { value: "0.1", label: "Tenth (e.g. bottle of ketchup)" },
+            ]}
             onChange={(selectedOption: SelectOption | null) =>
-              setForm((prev) => ({ ...prev, unit: selectedOption?.value || "" }))
+              setForm((prev) => ({
+                ...prev,
+                decrementStep: selectedOption?.value || "",
+              }))
             }
-            value={form.unit ? { value: form.unit, label: form.unit } : null}
+            value={
+              form.decrementStep
+                ? {
+                    value: form.decrementStep,
+                    label:
+                      form.decrementStep === "1"
+                        ? "Whole (e.g. can, loaf)"
+                        : form.decrementStep === "0.25"
+                        ? "Quarter (e.g. bag of chips)"
+                        : "Tenth (e.g. bottle of ketchup)",
+                  }
+                : null
+            }
             styles={customSelectStyles}
             isClearable
           />
@@ -161,7 +261,10 @@ export default function InventoryFormModal({
             placeholder="Location"
             options={locationOptions}
             onChange={(selectedOption: SelectOption | null) =>
-              setForm((prev) => ({ ...prev, location: selectedOption?.value || "" }))
+              setForm((prev) => ({
+                ...prev,
+                location: selectedOption?.value || "",
+              }))
             }
             value={
               form.location

@@ -23,6 +23,7 @@ export async function addToInventory(item: ManualInventoryInput) {
       notes: item.notes || null,
       lowThreshold: item.lowThreshold || null,
       imageUrl: item.imageUrl || null,
+      decrementStep: item.decrementStep || null,
       nutrition: Prisma.JsonNull,
       ingredients: Prisma.JsonNull,
     },

@@ -16,6 +16,7 @@ export type InventoryItem = {
     addedAt?: string;                   // ISO strings if fetched from JSON/REST
     updatedAt?: string;
     userId?: string;
+    decrementStep?: string;
   };
   
   export type ProductResult = {
@@ -42,6 +43,7 @@ export type InventoryItem = {
     notes?: string;
     lowThreshold?: string;
     imageUrl?: string;
+    decrementStep: string;
   };
   
   export type SelectOption = { value: string; label: string };

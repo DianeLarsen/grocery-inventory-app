@@ -30,6 +30,7 @@ model InventoryItem {
   barcode           String?
   ingredients       Json?
   nutrition         Json?
+  decrementStep     String?
   addedAt           DateTime @default(now())
   updatedAt         DateTime @updatedAt
   userId            String

@@ -29,6 +29,7 @@ export default function ManualAddForm() {
         lowThreshold: item.lowThreshold ?? undefined,
         notes: item.notes ?? undefined,
         imageUrl: undefined, // optional
+        decrementStep: item.decrementStep ?? "1",
       };
   
       await addToInventory(cleanedItem);
