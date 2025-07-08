@@ -10,6 +10,9 @@ export default async function InventoryPage() {
   if (!userId) return redirect("/");
 
   const items = await getInventory();
+  if (!items) {
+    
+  }
 
   return (
     <div className="p-6 space-y-6">
