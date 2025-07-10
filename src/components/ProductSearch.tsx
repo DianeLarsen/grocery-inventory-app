@@ -6,9 +6,19 @@ import Link from "next/link";
 // import Select from "react-select";
 import { addToInventory } from "@/lib/actions/addToInventory";
 import { getInventory } from "@/lib/actions/getInventory";
-import type { ProductResult, InventoryItem } from "@/types";
+import type {
+  ProductResult,
+  InventoryItem,
+  ManualInventoryInput,
+} from "@/types";
 import TypedSelect, { SelectOption } from "@/components/TypedSelect";
 import InventoryList from "./InventoryList";
+import InventoryFormModal from "./InventoryFormModal";
+import {
+  guessDecrementStep,
+  hasMissingFields,
+  normalizeToManualInput,
+} from "@/lib/utils";
 
 export default function ProductSearch() {
   const [query, setQuery] = useState("");
@@ -25,6 +35,10 @@ export default function ProductSearch() {
   const [limit, setLimit] = useState(10);
   const [existingInventory, setExistingInventory] = useState<InventoryItem[]>(
     []
+  );
+  const [showManualForm, setShowManualForm] = useState(false);
+  const [modalItem, setModalItem] = useState<Partial<InventoryItem> | null>(
+    null
   );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -69,15 +83,34 @@ export default function ProductSearch() {
   };
 
   const handleAddToInventory = async (item: ProductResult) => {
-    try {
-      await addToInventory(item);
-      setAddedItems((prev) => new Set(prev).add(item.upc || item.name));
-      console.log("✅ Item added to inventory:", item.name);
-      // Optional: Show toast or update UI
-    } catch (err) {
-      console.error("❌ Failed to add to inventory:", err);
+    const enrichedItem: ManualInventoryInput = {
+      name: item.name,
+      upc: item.upc,
+      brand: item.brand ?? "",
+      category: item.category ?? "",
+      productSize: item.productSize ?? "",
+      quantityAvailable: item.quantityAvailable ?? "",
+      unit: "", // let user fill this in
+      location: "",
+      notes: "",
+      lowThreshold: "",
+      imageUrl: item.imageUrl ?? "",
+      decrementStep: guessDecrementStep(item.productSize, ""),
+    };
+
+    if (hasMissingFields(enrichedItem)) {
+      setModalItem(enrichedItem); // pre-fill form
+      setShowManualForm(true);
+    } else {
+      try {
+        await addToInventory(enrichedItem);
+        setAddedItems((prev) => new Set(prev).add(item.upc || item.name));
+      } catch (err) {
+        console.error("❌ Failed to add to inventory:", err);
+      }
     }
   };
+
   const cancelSearch = () => {
     activeRequestId.current = -1;
     setResults(null);
@@ -150,7 +183,7 @@ export default function ProductSearch() {
             className="border p-2 rounded w-full md:w-1/3"
           />
         </div>
-  
+
         <div className="flex flex-wrap gap-2 items-center">
           <label htmlFor="limit" className="text-sm">
             Results per page:
@@ -166,7 +199,7 @@ export default function ProductSearch() {
             <option value={25}>25</option>
             <option value={100}>100</option>
           </select>
-  
+
           {/* Brand Filter */}
           {results && availableBrands.length > 0 && (
             <div className="relative w-full md:w-1/3" suppressHydrationWarning>
@@ -229,7 +262,7 @@ export default function ProductSearch() {
               )}
             </div>
           )}
-  
+
           {/* Search Buttons */}
           <button
             type="submit"
@@ -275,7 +308,7 @@ export default function ProductSearch() {
           )}
         </div>
       </form>
-  
+
       {/* 🔍 Matching Inventory Section */}
       {existingInventory.length > 0 && (
         <section className="mt-8 border-2 border-primary rounded-lg p-4 bg-muted/20 shadow-sm">
@@ -285,12 +318,12 @@ export default function ProductSearch() {
           <InventoryList initialItems={existingInventory} />
         </section>
       )}
-  
+
       {/* Loading State */}
       {loading && (
         <p className="text-orange-500 font-medium">🔍 Searching...</p>
       )}
-  
+
       {/* 📦 New Search Results Section */}
       {results && results.length > 0 && (
         <section className="mt-12 border-t-4 border-dashed border-muted pt-6">
@@ -376,7 +409,30 @@ export default function ProductSearch() {
           </div>
         </section>
       )}
-  
+      {showManualForm && modalItem && (
+        <InventoryFormModal
+          initialItem={modalItem}
+          onSave={async (data) => {
+            if (!data.name) {
+              console.error("❌ Item name is required.");
+              return;
+            }
+
+            const cleaned = normalizeToManualInput(data);
+
+            await addToInventory(cleaned);
+
+            setAddedItems((prev) =>
+              new Set(prev).add(cleaned.upc || cleaned.name || "")
+            );
+            setShowManualForm(false);
+          }}
+          onClose={() => setShowManualForm(false)}
+          title="📝 Complete Item Details"
+          isSaving={false}
+        />
+      )}
+
       {/* ❌ No Results Found */}
       {!loading && results && results.length === 0 && (
         <p className="text-center text-orange-500 font-medium mt-4">
@@ -385,5 +441,4 @@ export default function ProductSearch() {
       )}
     </div>
   );
-  
 }

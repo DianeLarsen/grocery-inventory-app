@@ -13,6 +13,7 @@ export type InventoryFormProps = {
   isModal?: boolean;
 };
 
+
 const predefinedUnits = [
   "jar",
   "can",
@@ -131,6 +132,11 @@ export default function InventoryFormModal({
   useEffect(() => {
     setForm(initialItem);
   }, [initialItem]);
+function isMissing(field: keyof InventoryItem) {
+  const val = form[field];
+  return !val || val.toString().trim() === "";
+}
+
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -175,7 +181,9 @@ export default function InventoryFormModal({
               value={form[field as keyof InventoryItem] ?? ""}
               onChange={handleChange}
               placeholder={field}
-              className="border p-2 rounded w-full"
+              className={`border p-2 rounded w-full ${
+    isMissing("name") ? "border-red-500 ring-1 ring-red-300" : ""
+  }`}
             />
           ))}
 
@@ -202,7 +210,9 @@ export default function InventoryFormModal({
             value={form.productSize ?? ""}
             onChange={handleChange}
             placeholder="Product size (e.g. 32oz box)"
-            className="border p-2 rounded w-full"
+            className={`border p-2 rounded w-full ${
+    isMissing("name") ? "border-red-500 ring-1 ring-red-300" : ""
+  }`}
           />
 
           <input
@@ -210,7 +220,9 @@ export default function InventoryFormModal({
             value={form.quantityAvailable ?? ""}
             onChange={handleChange}
             placeholder="Quantity (e.g. 1, 1/2)"
-            className="border p-2 rounded w-full"
+            className={`border p-2 rounded w-full ${
+    isMissing("name") ? "border-red-500 ring-1 ring-red-300" : ""
+  }`}
           />
 
           <TypedSelect
@@ -280,7 +292,9 @@ export default function InventoryFormModal({
             value={form.notes ?? ""}
             onChange={handleChange}
             placeholder="Notes"
-            className="border p-2 rounded w-full"
+            className={`border p-2 rounded w-full ${
+    isMissing("name") ? "border-red-500 ring-1 ring-red-300" : ""
+  }`}
           />
 
           <div className="flex justify-end gap-2 mt-4">

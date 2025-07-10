@@ -1,3 +1,5 @@
+// app/inventory/page.tsx
+
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import ProductSearch from "@/components/ProductSearch";
@@ -11,7 +13,7 @@ export default async function InventoryPage() {
 
   const items = await getInventory();
   if (!items) {
-    
+
   }
 
   return (

@@ -26,6 +26,7 @@ export async function addToInventory(item: ManualInventoryInput) {
       decrementStep: item.decrementStep || null,
       nutrition: Prisma.JsonNull,
       ingredients: Prisma.JsonNull,
+      
     },
   });
 }
