@@ -28,6 +28,18 @@ const predefinedUnits = [
   "cup",
   "tsp",
   "tbsp",
+   // 🆕 Added units for produce and individual items
+  "unit",       // For things like apples, oranges
+  "bunch",      // For bananas, grapes, herbs
+  "head",       // For lettuce, cabbage
+  "each",       // Synonym for unit
+  "slice",      // For cheese, bread, deli meat
+  "loaf",       // For bread
+  "stick",      // For butter
+  "clove",      // For garlic
+  "leaf",       // For mint, lettuce
+  "stalk",      // For celery
+  "other",
 ];
 
 const commonCategories = [
@@ -76,11 +88,12 @@ const predefinedLocations = [
 ];
 const recommendedDecrement = (unit: string): string => {
   const lower = unit.toLowerCase();
-  if (["can", "loaf", "each", "slice", "head"].includes(lower)) return "1";
-  if (["bag", "box", "carton"].includes(lower)) return "0.25";
+  if (["can", "loaf", "each", "slice", "head", "unit", "stick", "clove", "leaf", "stalk"].includes(lower)) return "1";
+  if (["bag", "box", "carton", "bunch"].includes(lower)) return "0.25";
   if (["jar", "bottle", "tub", "container"].includes(lower)) return "0.1";
   return "1";
 };
+
 
 const customSelectStyles = {
   control: (base: any) => ({
