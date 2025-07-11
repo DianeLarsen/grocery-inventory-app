@@ -45,7 +45,7 @@ export type InventoryItem = {
     lowThreshold?: string;
     imageUrl?: string;
     decrementStep: string;
-    cost: string;
+    cost?: string;
   };
   
   export type SelectOption = { value: string; label: string };
