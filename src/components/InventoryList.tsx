@@ -4,6 +4,7 @@ import { useState } from "react";
 import EditInventoryModal from "./EditInventoryModal"; // you'll create this next
 import type { InventoryItem } from "@/types";
 import Image from "next/image";
+import { updateItemQuantity, updateInventoryItem } from "@/lib/actions/updateItem";
 
 export default function InventoryList({
   initialItems,
@@ -17,24 +18,27 @@ export default function InventoryList({
     location: "",
     lowStockOnly: false,
   });
-  const handleAdjustQuantity = (item: InventoryItem, delta: number) => {
-    const current = parseFloat(item.quantityAvailable || "0");
-    const updatedQty = Math.max(current + delta, 0).toFixed(2); // avoid negatives
+const handleAdjustQuantity = async (item: InventoryItem, delta: number) => {
+  const current = parseFloat(item.quantityAvailable || "0");
+  const updatedQty = Math.max(current + delta, 0).toFixed(2);
+
+  const updatedItem = { ...item, quantityAvailable: updatedQty };
+
+  setItems((prev) =>
+    prev.map((i) => (i.id === item.id ? updatedItem : i))
+  );
+
+  await updateItemQuantity(item.id, updatedQty); // persist to db
+};
   
-    const updatedItem: InventoryItem = {
-      ...item,
-      quantityAvailable: updatedQty,
-    };
-  
-    setItems((prev) =>
-      prev.map((i) => (i.id === item.id ? updatedItem : i))
-    );
-  };
-  
-  const handleSave = (updated: InventoryItem) => {
-    setItems(items.map((item) => (item.id === updated.id ? updated : item)));
-    setEditingItem(null);
-  };
+const handleSave = async (updated: InventoryItem) => {
+  setItems((items) =>
+    items.map((item) => (item.id === updated.id ? updated : item))
+  );
+
+  await updateInventoryItem(updated); // ✅ Persist to DB
+  setEditingItem(null);
+};
   const filteredItems = items.filter((item) => {
     const matchesCategory =
       !filters.category || item.category === filters.category;

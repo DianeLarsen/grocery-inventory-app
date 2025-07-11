@@ -12,7 +12,7 @@ export async function addToInventory(item: ManualInventoryInput) {
   await prisma.inventoryItem.create({
     data: {
       userId,
-      barcode: item.upc || null,
+      upc: item.upc || null,
       name: item.name,
       category: item.category || null,
       brand: item.brand || null,

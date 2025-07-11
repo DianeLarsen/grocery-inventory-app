@@ -17,6 +17,7 @@ export type InventoryItem = {
     updatedAt?: string;
     userId?: string;
     decrementStep?: string;
+    cost?: string;
   };
   
   export type ProductResult = {
@@ -44,6 +45,17 @@ export type InventoryItem = {
     lowThreshold?: string;
     imageUrl?: string;
     decrementStep: string;
+    cost: string;
   };
   
   export type SelectOption = { value: string; label: string };
+
+  export type ParsedReceiptItem = {
+  name: string;
+  productSize?: string;
+  quantity: number;
+  cost: number;
+  unit?: string;
+  notes?: string;
+  upc?: string;
+};

@@ -27,7 +27,7 @@ model InventoryItem {
   notes             String?
   lowThreshold      String?
   imageUrl          String?
-  barcode           String?
+  upc               String?
   ingredients       Json?
   nutrition         Json?
   decrementStep     String?
@@ -35,6 +35,7 @@ model InventoryItem {
   updatedAt         DateTime @updatedAt
   userId            String
   user              User     @relation(fields: [userId], references: [id])
+  purchaseHistory   PurchaseHistory[] 
 }
 
 
@@ -43,4 +44,13 @@ model InventoryItem {
 model User {
   id             String          @id @default(cuid())
   inventoryItems InventoryItem[]
+}
+
+model PurchaseHistory {
+  id        String   @id @default(cuid())
+  itemId    String
+  item      InventoryItem @relation(fields: [itemId], references: [id])
+  cost      Float
+  quantity  Float
+  purchasedAt DateTime @default(now())
 }
